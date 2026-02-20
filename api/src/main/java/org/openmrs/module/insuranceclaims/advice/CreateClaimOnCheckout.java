@@ -146,7 +146,7 @@ public class CreateClaimOnCheckout implements AfterReturningAdvice {
 										if (debugMode)
 											System.out.println("Insurance Claims Module: Got provider uuid: " + providerUuid);
 									}
-									break; // ✅ stops BOTH loops
+									break; // stops BOTH loops
 								}
 							}
 
