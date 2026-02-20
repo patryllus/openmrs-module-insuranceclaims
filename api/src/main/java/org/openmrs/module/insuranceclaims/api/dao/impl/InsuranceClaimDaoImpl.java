@@ -51,10 +51,14 @@ public class InsuranceClaimDaoImpl extends BaseOpenmrsDataDao<InsuranceClaim> im
 	@Override
 	public List<InsuranceClaim> getUnProcessedInsuranceClaims() {
 		Criteria crit = createCriteria();
-		crit.createCriteria("status")
-				.add(Restrictions.eq("status", InsuranceClaimStatus.ENTERED));
+		crit.add(Restrictions.eq(
+			"status",
+			InsuranceClaimStatus.ENTERED
+		));
+
 		return findAllByCriteria(crit, false);
 	}
+
 
 	@Override
 	public List<InsuranceClaim> getInsuranceClaims(String uuid, String status, String usetype, String claimCode,

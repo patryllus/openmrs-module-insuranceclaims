@@ -822,5 +822,108 @@ public class InsuranceClaimResourceController {
         }
         return null;
     }
+/**
+	 * Update all unprocessed Claims status	 *
+	 * @params claimUuids
+	 * @return
+	 * @throws ResponseException
+*/
+
+	@CrossOrigin(origins = "*", methods = { RequestMethod.GET, RequestMethod.OPTIONS })
+	@RequestMapping(value = "/claim/update-status-all", method = RequestMethod.GET, produces = "application/json")
+	@ResponseBody
+	public ResponseEntity<String> updateAllClaimStatuses() {
+
+		System.out.println("Insurance Claims: REST - Bulk update claim statuses");
+
+		// Get list of claims with no responses
+		List<InsuranceClaim> unprocessedClaims = insuranceClaimService.getUnProcessedInsuranceClaims();
+
+		if (unprocessedClaims == null || unprocessedClaims.isEmpty()) {
+			return ResponseEntity.ok("No claims found for update");
+		}
+
+		System.out.println("Insurance Claims: REST - Bulk claims to update ==>"+unprocessedClaims.size());
+		
+		int successCount = 0;
+		int failCount = 0;
+
+		try {
+			Context.openSession();
+			Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
+
+			String callbackUrl = Context.getAdministrationService()
+				.getGlobalProperty(ConstantValues.HIE_CALLBACK_URL);
+
+			String claimResponseUrl = Context.getAdministrationService()
+				.getGlobalProperty(ConstantValues.CLAIM_RESPONSE_URL);
+
+			String claimResponseSource = Context.getAdministrationService()
+				.getGlobalProperty(ConstantValues.CLAIM_RESPONSE_SOURCE);
+
+			boolean isHieEnabled = "hie".equalsIgnoreCase(claimResponseSource);
+
+			String accessToken = GeneralUtil.getILMediatorAuthToken();
+
+			for (InsuranceClaim claim : unprocessedClaims) {
+
+				if (claim.getExternalId() == null) {
+					System.out.println("Skipping claim with no externalId: " + claim.getUuid());
+					continue;
+				}
+				System.out.println("Updating claim with  externalId: " + claim.getExternalId());
+				String externalId = claim.getExternalId();
+
+				try {
+					ClaimTransactionStatus status =
+						claimTransactionStatusService.getLatestStatusById(
+							externalId,
+							isHieEnabled,
+							accessToken,
+							claimResponseUrl,
+							callbackUrl
+						);
+
+					if (status == null) {
+						System.out.println("Failed retrieving status for: " + externalId);
+						failCount++;
+						continue;
+					}
+
+					InsuranceClaim updatedClaim =
+						insuranceClaimService.updateClaimStatus(externalId, status.getStatus());
+
+					if (updatedClaim != null) {
+						successCount++;
+					} else {
+						failCount++;
+					}
+
+				} catch (Exception e) {
+					System.out.println("Error updating claim externalId: " + externalId + " error: " + e.getMessage());
+					failCount++;
+				}
+			}
+
+			String result = String.format("Bulk update completed. Success: %d, Failed: %d", successCount, failCount);
+			return ResponseEntity.ok(result);
+
+		} catch (Exception ex) {
+			System.err.println("Insurance Claims: Bulk update ERROR: " + ex.getMessage());
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("Bulk update failed: " + ex.getMessage());
+		} finally {
+			try {
+				Context.closeSession();
+			} catch (Exception e) {
+				System.out.println("Error closing session: " + e.getMessage());
+			}
+		}
+	}
+	
+
+
+		
+		
 
 }
