@@ -232,6 +232,7 @@ public class CreateClaimOnCheckout implements AfterReturningAdvice {
 									EncounterType aefiET = encounterService.getEncounterTypeByUuid(InsuranceClaimConstants.ENCOUNTER_TYPE_AEFI_INVESTIGATION);
 
 									if (encType != null) {
+										//Setting interventions by Encounter types
 										// Consultation encounter - check
 										// SHA-12-001: Consultation
 										if (encType == consultationEncounterType ||
@@ -242,31 +243,6 @@ public class CreateClaimOnCheckout implements AfterReturningAdvice {
 											encType == kpClinicVisitET) {
 
 											interventionsSet.add("SHA-12-001");
-										}
-
-										// SHA-12-002: Lab investigations
-										if (encType == labResultsET ||
-											encType == labOrderET ||
-											encType == procedureResultsET ||
-											encType == ipdProcedureET) {
-
-											interventionsSet.add("SHA-12-002");
-										}
-
-										// SHA-12-003: Radiology
-										if (encType == procedureResultsET ||
-											encType == ipdProcedureET) {
-
-											interventionsSet.add("SHA-12-003");
-										}
-
-										// SHA-12-004: Prescription / Dispensing
-										if (encType == drugOrderET ||
-											encType == drugRegimenET ||
-											encType == artRefillET ||
-											encType == prepRefillET) {
-
-											interventionsSet.add("SHA-12-004");
 										}
 
 										// SHA-12-006: Screening
@@ -313,28 +289,32 @@ public class CreateClaimOnCheckout implements AfterReturningAdvice {
 										}
 									}
 
-									// EncounterType
+									//Setting interventions by Order types 
 									Set<Order> orders = enc.getOrders();
 									for (Order order : orders) {
 										OrderType orderType = order.getOrderType();
 										OrderType drugOrderType = orderService.getOrderTypeByUuid(InsuranceClaimConstants.ORDER_TYPE_DRUG);
 										OrderType testOrderType = orderService.getOrderTypeByUuid(InsuranceClaimConstants.ORDER_TYPE_TEST);
 										OrderType procedureOrderType = orderService.getOrderTypeByUuid(InsuranceClaimConstants.ORDER_TYPE_PROCEDURE);
+										Order.FulfillerStatus fulfillerStatus = order.getFulfillerStatus();
+										//Ensure orders have results
+										 if(fulfillerStatus !=null && fulfillerStatus.equals(Order.FulfillerStatus.COMPLETED)) {
 
-										// Lab Test Order
-										if (testOrderType != null && orderType == testOrderType) {
-											interventionsSet.add("SHA-12-002");
-										}
+											 // Lab Test Order
+											 if (testOrderType != null && orderType == testOrderType) {
+												 interventionsSet.add("SHA-12-002");
+											 }
 
-										// Procedure Order e.g xray
-										if (procedureOrderType != null && orderType == procedureOrderType) {
-											interventionsSet.add("SHA-12-003");
-										}
+											 // Procedure Order e.g xray
+											 if (procedureOrderType != null && orderType == procedureOrderType) {
+												 interventionsSet.add("SHA-12-003");
+											 }
 
-										// Drug order - Pharmacy
-										if (drugOrderType != null && orderType == drugOrderType) {
-											interventionsSet.add("SHA-12-004");
-										}
+											 // Drug order - Pharmacy
+											 if (drugOrderType != null && orderType == drugOrderType) {
+												 interventionsSet.add("SHA-12-004");
+											 }
+										 }
 									}
 								}
 
