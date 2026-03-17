@@ -14,23 +14,20 @@
 package org.openmrs.module.insuranceclaims.web.resource;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.openmrs.Patient;
 import org.openmrs.annotation.Authorized;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.insuranceclaims.api.model.InsuranceClaim;
-import org.openmrs.module.insuranceclaims.api.model.InsuranceClaimIntervention;
 import org.openmrs.module.insuranceclaims.api.service.InsuranceClaimService;
-import org.openmrs.module.insuranceclaims.api.service.InsuranceClaimInterventionService;
 import org.openmrs.module.webservices.rest.SimpleObject;
 import org.openmrs.module.webservices.rest.web.ConversionUtil;
 import org.openmrs.module.webservices.rest.web.RequestContext;
 import org.openmrs.module.webservices.rest.web.RestConstants;
-import org.openmrs.module.webservices.rest.web.annotation.PropertyGetter;
 import org.openmrs.module.webservices.rest.web.annotation.Resource;
 import org.openmrs.module.webservices.rest.web.representation.DefaultRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.FullRepresentation;
@@ -44,6 +41,8 @@ import org.openmrs.module.webservices.rest.web.resource.impl.NeedsPaging;
 import org.openmrs.module.webservices.rest.web.response.ResponseException;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMethod;
+import java.lang.reflect.Method;
+import org.openmrs.module.webservices.rest.web.annotation.PropertyGetter;
 
 /**
  * REST resource representing a {@link InsuranceClaim}.
@@ -54,7 +53,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
         "2.0 - 2.*" })
 @Authorized
 public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
-
     @Override
     public InsuranceClaim getByUniqueId(String uniqueId) {
         InsuranceClaimService insuranceClaimService = Context.getService(InsuranceClaimService.class);
@@ -122,22 +120,6 @@ public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
         return getPatient(claim);
     }
 
-    @PropertyGetter("interventions")
-    public List<String> getInterventions(InsuranceClaim claim) {
-        try {
-            InsuranceClaimInterventionService service =
-                    Context.getService(InsuranceClaimInterventionService.class);
-            List<InsuranceClaimIntervention> interventions = service.getByClaimId(claim.getId());
-            if (interventions == null) return new ArrayList<>();
-            return interventions.stream()
-                    .map(InsuranceClaimIntervention::getName)
-                    .collect(Collectors.toList());
-        } catch (Exception ex) {
-            System.err.println("ClaimResource: Error fetching interventions: " + ex.getMessage());
-            return new ArrayList<>();
-        }
-    }
-
     @Override
     public DelegatingResourceDescription getRepresentationDescription(Representation representation) {
 
@@ -145,8 +127,8 @@ public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
             DelegatingResourceDescription description = new DelegatingResourceDescription();
             description.addProperty("uuid");
             description.addSelfLink();
-            return description;
 
+            return description;
         } else if (representation instanceof DefaultRepresentation) {
             DelegatingResourceDescription description = new DelegatingResourceDescription();
             description.addProperty("uuid");
@@ -158,16 +140,15 @@ public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
             description.addProperty("approvedTotal");
             description.addProperty("status");
             description.addProperty("use");
-            description.addProperty("interventions");
             description.addProperty("provider", Representation.REF);
             description.addProperty("patient");
             description.addProperty("location", Representation.REF);
             description.addProperty("visitType", Representation.REF);
-            description.addProperty("visit", Representation.DEFAULT);
+            description.addProperty("visit", Representation.REF);
             description.addProperty("bill", Representation.DEFAULT);
             description.addSelfLink();
-            return description;
 
+            return description;
         } else if (representation instanceof FullRepresentation) {
             DelegatingResourceDescription description = new DelegatingResourceDescription();
             description.addProperty("uuid");
@@ -186,7 +167,6 @@ public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
             description.addProperty("responseUUID");
             description.addProperty("use");
             description.addProperty("dateProcessed");
-            description.addProperty("interventions");
             description.addProperty("provider", Representation.FULL);
             description.addProperty("patient", Representation.FULL);
             description.addProperty("location", Representation.FULL);
@@ -195,6 +175,7 @@ public class ClaimResource extends DataDelegatingCrudResource<InsuranceClaim> {
             description.addProperty("bill", Representation.FULL);
             description.addSelfLink();
             description.addLink("full", ".?v=" + RestConstants.REPRESENTATION_FULL);
+
             return description;
         }
 

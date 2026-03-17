@@ -78,8 +78,6 @@ public class ProvidedItemResource extends DataDelegatingCrudResource<ProvidedIte
             desc.addProperty("numberOfConsumptions");
             desc.addProperty("item", Representation.REF);
             desc.addProperty("patient", Representation.REF);
-            desc.addProperty("interventionCode");    
-            desc.addProperty("interventionPackage");   
             desc.addSelfLink();
             desc.addLink("full", ".?v=" + RestConstants.REPRESENTATION_FULL);
 
